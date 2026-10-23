@@ -125,6 +125,8 @@ Reports have `schema_version: 1`, a count per severity, and a stable `changes` a
 
 This project focuses on small, offline tool snapshots and explainable CI output. [mcp-server-diff](https://github.com/SamMorrowDrums/mcp-server-diff) is related work with broader MCP interface diffing. [MCP Inspector](https://github.com/modelcontextprotocol/inspector) provides interactive inspection and protocol testing. Use those when their scope fits your needs.
 
+Companion project: [agent-tracecheck](https://github.com/L1Huash1/agent-tracecheck) diagnoses repeated tool calls, missing results, and observed budgets from a recorded run. Use this project before tool upgrades and the companion after a run.
+
 HTML reports are self-contained files with severity filters, text search, and expandable old/new values. They also work as readable reports with JavaScript disabled; no data is uploaded. See the [walkthrough](docs/walkthrough.md).
 
 No native framework adapters, live MCP transport, runtime enforcement, model evaluation, or full schema inclusion proof are implemented. See the [roadmap](docs/roadmap.md).
