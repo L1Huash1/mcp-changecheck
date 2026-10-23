@@ -233,7 +233,7 @@ class CliTests(unittest.TestCase):
         self.assertIn("Content-Security-Policy", content)
 
     def test_decimal_values_that_would_be_silently_rounded_are_rejected(self):
-        for literal in ("0.100000000000000000001", "9007199254740993.0", "1e999"):
+        for literal in ("0.100000000000000000001", "9007199254740993.0", "1e999", "1e-99999999999999999999"):
             with self.subTest(literal=literal):
                 self.after.write_text('{"tools":[{"name":"search","inputSchema":'
                                       '{"type":"object","properties":{"q":{"enum":['

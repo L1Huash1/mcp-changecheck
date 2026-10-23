@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import html
 import json
 import math
@@ -30,8 +30,12 @@ def _invalid_constant(value):
 
 
 def _float(token):
-    value = float(token)
-    if not math.isfinite(value) or Decimal(token) != Decimal(str(value)):
+    try:
+        value = float(token)
+        exact = math.isfinite(value) and Decimal(token) == Decimal(str(value))
+    except (ValueError, OverflowError, InvalidOperation):
+        exact = False
+    if not exact:
         raise SnapshotError("Decimal number exceeds supported round-trip precision; this version cannot compare it reliably")
     return value
 
