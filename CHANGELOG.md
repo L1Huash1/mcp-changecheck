@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 — 2026-10-23
+
+- Add a self-contained HTML report with severity filters, search, expandable values, and print styling.
+- Accept empty and repeated enum entries with set semantics.
+- Add a review fallback for changed input schemas containing references.
+- Reject decimal inputs that would silently lose precision; compare supported int/float values consistently.
+- Add a short usage walkthrough and regression coverage for the new behavior.
+
 ## 0.1.0 — 2026-10-23
 
 Initial alpha implementation:

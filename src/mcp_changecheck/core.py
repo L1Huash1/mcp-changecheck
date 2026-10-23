@@ -6,6 +6,7 @@ Changes to keywords whose compatibility cannot be established need review.
 
 from __future__ import annotations
 
+from decimal import Decimal
 import math
 from typing import Any
 
@@ -55,7 +56,7 @@ def _freeze(value: Any) -> Any:
     if type(value) is bool:
         return ("boolean", value)
     if isinstance(value, (int, float)):
-        return ("number", value)
+        return ("number", Decimal(str(value)))
     if isinstance(value, str):
         return ("string", value)
     if isinstance(value, list):
@@ -81,6 +82,24 @@ def _schema_key(schema: Any) -> Any:
     return tuple(sorted(result.items()))
 
 
+def _has_reference(schema: Any) -> bool:
+    """Look only in schema locations, never in enum/default/example data."""
+    if type(schema) is bool:
+        return False
+    if "$ref" in schema or "$dynamicRef" in schema:
+        return True
+    for key in _MAP_SCHEMAS & schema.keys():
+        if any(_has_reference(child) for child in schema[key].values()):
+            return True
+    for key in _SINGLE_SCHEMAS & schema.keys():
+        if _has_reference(schema[key]):
+            return True
+    for key in _LIST_SCHEMAS & schema.keys():
+        if any(_has_reference(child) for child in schema[key]):
+            return True
+    return False
+
+
 def _validate_schema(schema: Any, path: str) -> None:
     if type(schema) is bool:
         return
@@ -99,9 +118,8 @@ def _validate_schema(schema: Any, path: str) -> None:
             raise SnapshotError(f"{path}/required: expected a list of unique strings")
     if "enum" in schema:
         values = schema["enum"]
-        if (not isinstance(values, list) or not values
-                or len({_freeze(v) for v in values}) != len(values)):
-            raise SnapshotError(f"{path}/enum: expected a nonempty list of unique JSON values")
+        if not isinstance(values, list):
+            raise SnapshotError(f"{path}/enum: expected a list of JSON values")
     for key in _MAP_SCHEMAS & schema.keys():
         value = schema[key]
         if not isinstance(value, dict):
@@ -263,7 +281,12 @@ def compare_snapshots(before: Any, after: Any) -> dict[str, Any]:
             add("breaking", "tool_removed", name, "", "Tool removed.", old=old_tools[name])
             continue
         old, new = old_tools[name], new_tools[name]
+        input_changes_start = len(changes)
         schema_diff(old["inputSchema"], new["inputSchema"], name, "/inputSchema")
+        if (len(changes) > input_changes_start
+                and (_has_reference(old["inputSchema"]) or _has_reference(new["inputSchema"]))):
+            add("review", "referenced_input_changed", name, "/inputSchema",
+                "Input schema changed and contains references; compatibility requires review without resolving references.")
         left, right = old.get("outputSchema", _MISSING), new.get("outputSchema", _MISSING)
         if ((left is _MISSING or right is _MISSING) and left is not right
                 or left is not _MISSING and right is not _MISSING and _schema_key(left) != _schema_key(right)):

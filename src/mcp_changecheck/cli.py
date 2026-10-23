@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import argparse
+from decimal import Decimal, InvalidOperation
 import html
 import json
+import math
 from pathlib import Path
 import re
 import sys
 
 from . import __version__
 from .core import SnapshotError, compare_snapshots
+from .html_report import render_html
 
 
 def _object(pairs):
@@ -26,12 +29,24 @@ def _invalid_constant(value):
     raise SnapshotError(f"Non-standard JSON value: {value}")
 
 
+def _float(token):
+    try:
+        value = float(token)
+        exact = math.isfinite(value) and Decimal(token) == Decimal(str(value))
+    except (ValueError, OverflowError, InvalidOperation):
+        exact = False
+    if not exact:
+        raise SnapshotError("Decimal number exceeds supported round-trip precision; this version cannot compare it reliably")
+    return value
+
+
 def load_snapshot(path: Path):
     """Load strict UTF-8 JSON; accept Windows' optional UTF-8 BOM."""
     return json.loads(
         path.read_text(encoding="utf-8-sig"),
         object_pairs_hook=_object,
         parse_constant=_invalid_constant,
+        parse_float=_float,
     )
 
 
@@ -45,6 +60,8 @@ def _markdown(value):
 
 
 def render_report(report: dict, output_format: str = "text") -> str:
+    if output_format == "html":
+        return render_html(report)
     if output_format == "json":
         return json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     summary = report["summary"]
@@ -88,7 +105,7 @@ def main(argv=None):
     parser.add_argument("before", type=Path, help="baseline JSON snapshot")
     parser.add_argument("after", type=Path, help="candidate JSON snapshot")
     parser.add_argument("--version", action="version", version=f"mcp-changecheck {__version__}")
-    parser.add_argument("--format", choices=("text", "json", "markdown"), default="text")
+    parser.add_argument("--format", choices=("text", "json", "markdown", "html"), default="text")
     parser.add_argument("--output", type=Path, help="write report to this file instead of stdout")
     parser.add_argument(
         "--fail-on", choices=("breaking", "review", "any", "never"), default="review",

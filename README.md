@@ -36,6 +36,9 @@ mcp-changecheck examples/before.json examples/after.json --format json --fail-on
 # Review report for a pull request
 mcp-changecheck examples/before.json examples/after.json --format markdown --output report.md
 
+# Interactive offline report: open report.html in your browser
+mcp-changecheck examples/before.json examples/after.json --format html --output report.html
+
 # Unchanged snapshots pass
 mcp-changecheck examples/before.json examples/before.json
 ```
@@ -93,7 +96,7 @@ Supply your own baseline and candidate snapshots at the paths in the example. Th
 
 | Option | Meaning |
 | --- | --- |
-| `--format text\|json\|markdown` | Report format, default `text` |
+| `--format text\|json\|markdown\|html` | Report format, default `text` |
 | `--output PATH` | Save report instead of printing it |
 | `--fail-on breaking` | Fail only on `breaking` findings |
 | `--fail-on review` | Fail on `breaking` or `review`, the default |
@@ -122,7 +125,9 @@ Reports have `schema_version: 1`, a count per severity, and a stable `changes` a
 
 This project focuses on small, offline tool snapshots and explainable CI output. [mcp-server-diff](https://github.com/SamMorrowDrums/mcp-server-diff) is related work with broader MCP interface diffing. [MCP Inspector](https://github.com/modelcontextprotocol/inspector) provides interactive inspection and protocol testing. Use those when their scope fits your needs.
 
-No native framework adapters, live MCP transport, runtime enforcement, model evaluation, or full schema inclusion proof are implemented in v0.1. See the [roadmap](docs/roadmap.md).
+HTML reports are self-contained files with severity filters, text search, and expandable old/new values. They also work as readable reports with JavaScript disabled; no data is uploaded. See the [walkthrough](docs/walkthrough.md).
+
+No native framework adapters, live MCP transport, runtime enforcement, model evaluation, or full schema inclusion proof are implemented. See the [roadmap](docs/roadmap.md).
 
 ## Development
 

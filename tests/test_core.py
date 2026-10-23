@@ -190,6 +190,27 @@ class ComparisonTests(unittest.TestCase):
         after = tool(properties={"q": {"enum": ["a"]}})
         self.assert_severity(report_for([before], [after]), "breaking")
 
+    def test_empty_and_repeated_enum_values_are_valid_and_use_set_semantics(self):
+        for values in ([], ["a", "a"], [1, 1.0]):
+            item = tool(properties={"q": {"enum": values}})
+            with self.subTest(values=values):
+                self.assertEqual(normalize_snapshot([item]), {"search": item})
+                self.assertEqual(report_for([item], [deepcopy(item)])["changes"], [])
+        repeated = tool(properties={"q": {"enum": ["a", "a", 1, 1.0]}})
+        unique = tool(properties={"q": {"enum": [1, "a"]}})
+        self.assertEqual(report_for([repeated], [unique])["changes"], [])
+        empty = tool(properties={"q": {"enum": []}})
+        self.assert_severity(report_for([unique], [empty]), "breaking")
+        self.assertEqual(report_for([empty], [unique])["summary"],
+                         {"breaking": 0, "review": 0, "info": 1})
+
+    def test_numeric_enum_comparison_uses_exact_decimal_json_values(self):
+        before = tool(properties={"q": {"enum": [36028797018963968]}})
+        after = tool(properties={"q": {"enum": [36028797018963970.0]}})
+        self.assert_severity(report_for([before], [after]), "breaking")
+        self.assertEqual(report_for([tool(properties={"q": {"enum": [1, 0]}})],
+                                    [tool(properties={"q": {"enum": [1.0, -0.0]}})])["changes"], [])
+
     def test_json_enum_values_distinguish_boolean_from_number(self):
         for boolean, number in ((True, 1), (False, 0)):
             before = tool(properties={"q": {"enum": [boolean, number]}})
@@ -228,6 +249,44 @@ class ComparisonTests(unittest.TestCase):
         before = tool(properties={"q": {"type": "string", "pattern": "^[a-z]+$"}})
         after = tool(properties={"q": {"type": "string", "pattern": "^[a-z0-9]+$"}})
         self.assert_severity(report_for([before], [after]), "review")
+
+    def test_widening_a_schema_referenced_under_not_requires_review(self):
+        for reference in ("$ref", "$dynamicRef"):
+            before = tool(properties={"q": {"type": "string"}})
+            before["inputSchema"]["allOf"] = [{
+                "not": {"required": ["a"], "properties": {"a": {reference: "#/properties/q"}}}
+            }]
+            after = deepcopy(before)
+            after["inputSchema"]["properties"]["q"]["type"] = ["string", "null"]
+            with self.subTest(reference=reference):
+                report = report_for([before], [after])
+                self.assert_severity(report, "info")
+                self.assertTrue(any(change["code"] == "referenced_input_changed"
+                                    and change["severity"] == "review"
+                                    for change in report["changes"]), report)
+
+    def test_reference_fallback_ignores_reordering_and_equivalent_type_spelling(self):
+        before = tool(properties={"q": {"type": ["string", "null"], "enum": ["a", None]},
+                                  "a": {"$ref": "#/properties/q"}}, required=["q", "a"])
+        after = deepcopy(before)
+        after["inputSchema"]["properties"]["q"].update({"type": ["null", "string"], "enum": [None, "a"]})
+        after["inputSchema"]["required"] = ["a", "q"]
+        self.assertEqual(report_for([before], [after])["changes"], [])
+        before["inputSchema"]["properties"]["q"]["type"] = "string"
+        after = deepcopy(before)
+        after["inputSchema"]["properties"]["q"]["type"] = ["string"]
+        self.assertEqual(report_for([before], [after])["changes"], [])
+
+    def test_reference_like_keys_in_literal_data_do_not_trigger_fallback(self):
+        before = tool(properties={"q": {"type": "string"},
+                                  "payload": {"type": "object", "enum": [{"$ref": "data", "$dynamicRef": "data"}]}})
+        before["inputSchema"].update({"default": {"q": "hello", "$ref": "data"},
+                                      "examples": [{"$dynamicRef": "data"}],
+                                      "x-data": {"not": {"$ref": "data"}}})
+        after = deepcopy(before)
+        after["inputSchema"]["properties"]["q"]["type"] = ["string", "null"]
+        self.assertEqual(report_for([before], [after])["summary"],
+                         {"breaking": 0, "review": 0, "info": 1})
 
     def test_output_schema_changes_need_review(self):
         before = tool(outputSchema={"type": "object", "properties": {"count": {"type": "integer"}}})

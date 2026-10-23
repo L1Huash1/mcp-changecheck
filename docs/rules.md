@@ -28,7 +28,9 @@ Only corresponding `properties` recurse into the rules below. An input schema's 
 
 `number` includes `integer`. JSON booleans and numbers are distinct enum values, while `1` and `1.0` represent the same numeric value. Ordering in `required`, `type`, and `enum` is ignored. Object key order and tool list order are ignored.
 
-References, combinators, patterns, numeric/string limits, `items`, `$defs`, and additional-property schemas are not interpreted for compatibility. Changes are reported atomically as review findings. Unchanged references are not resolved, and unchanged complex constraints do not alter the simple rules above. Unknown changed keywords are review findings.
+References, combinators, patterns, numeric/string limits, `items`, `$defs`, and additional-property schemas are not interpreted for compatibility. Changes are reported atomically as review findings. When input changes are detected and the old or new schema contains `$ref` or `$dynamicRef` at a recognized schema location, an additional review finding is emitted. A reference can reverse the effect of a local change through contexts such as `not`. References are never fetched or resolved. Unknown changed keywords are review findings.
+
+`enum` must be an array; empty and duplicate entries are accepted and compared with set semantics. These are valid structural inputs even though nonempty unique entries are preferable for interoperable schemas.
 
 This checker follows modern object/boolean subschema shapes. It does not implement older dialect-specific shapes such as draft-07 tuple `items` arrays. It validates the structural fields it inspects, not every rule of a JSON Schema dialect.
 
@@ -57,6 +59,6 @@ The inputs must represent the same intended server scope. A complete empty list 
 
 The JSON report has `schema_version: 1`, `summary`, and `changes`. Paths are JSON Pointers relative to the affected tool; an empty path identifies the whole tool. Changes are sorted by tool, path, code, and severity. Missing old/new values are omitted; JSON null is preserved as a value. Findings may include snapshot values, so treat generated reports with the same care as the input files.
 
-Text output escapes control characters. Markdown output escapes tool-provided markup. The CLI rejects duplicate JSON keys and nonfinite JSON numbers. The Python API validates finite JSON values but cannot recover duplicate keys already discarded by a caller's JSON parser.
+Text output escapes control characters. Markdown and HTML output escape tool-provided markup. HTML is a self-contained file with a fixed filter/search script; snapshot content is never executed. The CLI rejects duplicate JSON keys, nonfinite numbers, and decimal tokens that cannot round-trip through its supported numeric representation. For example, `0.1` is supported; `0.100000000000000000001` is explicitly rejected rather than silently rounded. Arbitrary-precision numeric parsing is outside this version's scope. The Python API validates finite JSON values but cannot recover duplicate keys or precision already discarded by a caller's JSON parser.
 
 No finding means only that these static rules found no change. Server code, external state, authorization, prompts, actual outputs, and runtime side effects are outside this comparison.
