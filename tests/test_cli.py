@@ -221,6 +221,41 @@ class CliTests(unittest.TestCase):
     def test_unknown_option_value_is_usage_error(self):
         self.assert_user_error(self.compare("--fail-on", "sometimes"))
 
+    def test_html_report_is_written_and_threshold_is_preserved(self):
+        self.write_snapshots(snapshot("removed"), snapshot())
+        target = self.directory / "report.html"
+        result = self.compare("--format", "html", "--output", target)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(result.stdout, "")
+        content = target.read_text(encoding="utf-8")
+        self.assertIn("<!doctype html>", content.lower())
+        self.assertIn("removed", content)
+        self.assertIn("Content-Security-Policy", content)
+
+    def test_decimal_values_that_would_be_silently_rounded_are_rejected(self):
+        for literal in ("0.100000000000000000001", "9007199254740993.0", "1e999"):
+            with self.subTest(literal=literal):
+                self.after.write_text('{"tools":[{"name":"search","inputSchema":'
+                                      '{"type":"object","properties":{"q":{"enum":['
+                                      + literal + ']}}}}]}', encoding="utf-8")
+                self.assert_user_error(self.compare())
+
+    def test_exact_large_numeric_equivalents_do_not_report_changes(self):
+        before, after = snapshot("search"), snapshot("search")
+        before['tools'][0]['inputSchema']['properties']['q'] = {'enum': [10 ** 100]}
+        after['tools'][0]['inputSchema']['properties']['q'] = {'enum': [1e100]}
+        self.write_snapshots(before, after)
+        result = self.compare("--format", "json")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(json.loads(result.stdout)['changes'], [])
+
+    def test_normal_decimal_values_remain_supported(self):
+        data = snapshot("search")
+        data['tools'][0]['inputSchema']['properties']['q'] = {'enum': [0.1, 2.5, 1e100]}
+        self.write_snapshots(data, data)
+        result = self.compare("--format", "json")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

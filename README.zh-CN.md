@@ -23,6 +23,9 @@ mcp-changecheck examples/before.json examples/after.json
 # 生成 Markdown 报告
 mcp-changecheck examples/before.json examples/after.json --format markdown --output report.md
 
+# 生成可以直接用浏览器打开的交互报告
+mcp-changecheck examples/before.json examples/after.json --format html --output report.html
+
 # 只查看 JSON，不因发现变化而返回失败
 mcp-changecheck examples/before.json examples/after.json --format json --fail-on never
 
@@ -62,6 +65,8 @@ mcp-changecheck examples/before.json examples/before.json
 - annotations 是服务端声明的提示。检查其变化不等于验证真实权限或安全性。
 - 没有发现变化，只表示这些规则没有命中；不能推断服务端运行行为没有变化。
 - 快照可能包含业务信息。程序不会联网，分享报告前仍需自行检查其中的输入内容。
+
+HTML 报告支持按等级筛选、搜索工具名和展开前后数据。它是一个独立文件，打开后不会上传数据。完整演示见 [操作指南](docs/walkthrough.md)。
 
 完整 CLI、Python API、CI 示例和同类工具说明请看 [英文 README](README.md)。底层规则和已知限制见 [rules.md](docs/rules.md)。
 
