@@ -13,6 +13,11 @@ This is a candidate backlog, not a commitment to release dates.
 - Self-contained HTML reports with filters, search, inspectable values and print styling.
 - An offline walkthrough and conservative reference-change handling.
 
+## Delivered in 0.3
+
+- A reusable GitHub Action with Markdown job summaries and explicit threshold/status outputs.
+- Windows and Linux action smoke checks using the bundled snapshots.
+
 ## Then: improve adoption
 
 - Document baseline capture with MCP Inspector, including full pagination.

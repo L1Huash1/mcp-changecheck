@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 — 2026-10-25
+
+- Add a composite GitHub Action that installs the checker from the selected action revision, compares local snapshots and writes a Markdown job summary.
+- Preserve CLI exit thresholds, expose comparison status/report outputs, and avoid presenting stale reports after invalid input.
+- Add Windows/Linux action smoke checks and regressions for linked outputs, path boundaries, literal path values and runner diagnostics.
+
 ## 0.2.1 — 2026-10-25
 
 - Reject report outputs that alias either input snapshot through a hard link, as well as the same path or a symbolic link, preserving the input files and returning exit code 2.

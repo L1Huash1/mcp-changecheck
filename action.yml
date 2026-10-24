@@ -1,0 +1,48 @@
+name: MCP changecheck
+description: Compare complete MCP tool snapshots and add a local contract-change report to the job summary.
+author: L1Huash1
+branding:
+  icon: git-pull-request
+  color: blue
+inputs:
+  before:
+    description: Baseline snapshot path, relative to the checked-out workspace or absolute.
+    required: true
+  after:
+    description: Candidate snapshot path, relative to the checked-out workspace or absolute.
+    required: true
+  fail-on:
+    description: Finding threshold (review, breaking, any, or never).
+    default: review
+  report-path:
+    description: Markdown report path within the workspace.
+    default: mcp-changecheck-report.md
+  summary:
+    description: Append the generated Markdown report to the GitHub job summary (true or false).
+    default: 'true'
+outputs:
+  exit-code:
+    description: Checker status, 0 for below threshold, 1 for findings, 2 for invalid input or file errors.
+    value: ${{ steps.check.outputs.exit-code }}
+  report-path:
+    description: Absolute report path, or empty if no valid report was generated.
+    value: ${{ steps.check.outputs.report-path }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v7.1.0
+      with:
+        python-version: '3.13'
+    - name: Install the checker from this action revision
+      shell: bash
+      run: python -m pip install --disable-pip-version-check --no-deps "$GITHUB_ACTION_PATH"
+    - name: Compare tool snapshots
+      id: check
+      shell: bash
+      env:
+        MCP_BEFORE: ${{ inputs.before }}
+        MCP_AFTER: ${{ inputs.after }}
+        MCP_FAIL_ON: ${{ inputs.fail-on }}
+        MCP_REPORT_PATH: ${{ inputs.report-path }}
+        MCP_SUMMARY: ${{ inputs.summary }}
+      run: python "$GITHUB_ACTION_PATH/action/run.py"

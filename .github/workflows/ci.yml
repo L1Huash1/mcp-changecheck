@@ -14,8 +14,8 @@ jobs:
         python: ['3.10', '3.13']
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install .
@@ -24,3 +24,43 @@ jobs:
         run: mcp-changecheck examples/before.json examples/before.json
       - name: Changed snapshot can produce a JSON report
         run: mcp-changecheck examples/before.json examples/after.json --format json --fail-on never
+  action:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Unchanged contract action passes
+        id: unchanged
+        uses: ./
+        with:
+          before: examples/before.json
+          after: examples/before.json
+          report-path: reports/unchanged.md
+      - name: Changed contract action reports findings
+        id: changed
+        continue-on-error: true
+        uses: ./
+        with:
+          before: examples/before.json
+          after: examples/after.json
+          report-path: reports/changed.md
+      - name: Verify action outcomes and reports
+        shell: python
+        env:
+          PASS_CODE: ${{ steps.unchanged.outputs.exit-code }}
+          FAIL_CODE: ${{ steps.changed.outputs.exit-code }}
+          FAIL_OUTCOME: ${{ steps.changed.outcome }}
+          PASS_REPORT: ${{ steps.unchanged.outputs.report-path }}
+          FAIL_REPORT: ${{ steps.changed.outputs.report-path }}
+        run: |
+          import os
+          from pathlib import Path
+          assert os.environ['PASS_CODE'] == '0'
+          assert os.environ['FAIL_CODE'] == '1'
+          assert os.environ['FAIL_OUTCOME'] == 'failure'
+          assert Path(os.environ['PASS_REPORT']).is_file()
+          changed = Path(os.environ['FAIL_REPORT']).read_text(encoding='utf-8')
+          assert 'archive_note' in changed and 'breaking' in changed.lower()

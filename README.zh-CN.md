@@ -1,5 +1,7 @@
 # mcp-changecheck
 
+[![自动检查](https://github.com/L1Huash1/mcp-changecheck/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/L1Huash1/mcp-changecheck/actions/workflows/ci.yml)
+
 **在 MCP 工具升级前，找出可能影响 Agent 的接口变化。**
 
 [English](README.md) · [规则与限制](docs/rules.md) · [开发计划](docs/roadmap.md)
@@ -52,6 +54,20 @@ mcp-changecheck examples/before.json examples/before.json
 `--fail-on breaking` 只因 breaking 失败；`review` 同时包括 breaking，且为默认值；`any` 包括所有变化；`never` 只报告。输入无效时始终返回 **2**。正常且未达到阈值返回 **0**。
 
 `--output` 不能指向任一输入快照，包括指向同一文件的硬链接或符号链接；遇到这种情况会返回 **2**，保留输入文件。
+
+## 在 GitHub 自动检查里使用
+
+在自己的工作流里添加以下步骤，即可把变更报告写入运行页面的摘要：
+
+```yaml
+- uses: actions/checkout@v7.0.1
+- uses: L1Huash1/mcp-changecheck@v0.3.0
+  with:
+    before: snapshots/baseline.json
+    after: snapshots/candidate.json
+```
+
+两个快照文件需要由你的项目提供。默认遇到 breaking 或 review 级别的变化会失败，同时保留报告；`fail-on: never` 可以只报告。无需 API Key 或仓库写权限。完整工作流及参数见 [接入说明](docs/github-action.md)。
 
 ## 如何准备快照
 
