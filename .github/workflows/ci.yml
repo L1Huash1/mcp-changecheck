@@ -63,4 +63,4 @@ jobs:
           assert os.environ['FAIL_OUTCOME'] == 'failure'
           assert Path(os.environ['PASS_REPORT']).is_file()
           changed = Path(os.environ['FAIL_REPORT']).read_text(encoding='utf-8')
-          assert 'archive_note' in changed and 'breaking' in changed.lower()
+          assert r'archive\_note' in changed and 'breaking' in changed.lower()

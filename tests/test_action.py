@@ -81,6 +81,14 @@ class ActionTests(unittest.TestCase):
         self.assertIn("breaking", Path(outputs["report-path"]).read_text(encoding="utf-8").lower())
         self.assertTrue(self.summary.exists())
 
+    def test_repository_examples_keep_escaped_tool_names_in_the_markdown_report(self):
+        result = self.run_action(MCP_BEFORE=str(PROJECT / "examples" / "before.json"),
+                                 MCP_AFTER=str(PROJECT / "examples" / "after.json"))
+        self.assertEqual(result.returncode, 1, result.stderr)
+        report = Path(self.read_outputs()["report-path"]).read_text(encoding="utf-8")
+        self.assertIn(r"archive\_note", report)
+        self.assertIn("breaking", report.lower())
+
     def test_never_threshold_keeps_findings_without_failing(self):
         self.after.write_text(json.dumps(snapshot(required=True)), encoding="utf-8")
         result = self.run_action(MCP_FAIL_ON="never")
