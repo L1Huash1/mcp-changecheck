@@ -4,6 +4,8 @@
 
 [中文说明](README.zh-CN.md) · [Rules and limitations](docs/rules.md) · [Contributing](CONTRIBUTING.md)
 
+[![Tests](https://github.com/L1Huash1/mcp-changecheck/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/L1Huash1/mcp-changecheck/actions/workflows/ci.yml)
+
 `mcp-changecheck` compares two complete MCP `tools/list` snapshots locally. It reports removed tools, newly required arguments, narrowed input types or enums, and changes that deserve review, including tool descriptions and annotation hints.
 
 No model calls. No server execution. No API key. **Zero runtime dependencies; Python 3.10+.**
@@ -77,6 +79,20 @@ Tool order, property order, and `required`/`type`/`enum` array order do not matt
 
 ## CI
 
+Use the bundled GitHub Action to compare snapshots and read the report in the job summary:
+
+```yaml
+- uses: actions/checkout@v7.0.1
+- uses: L1Huash1/mcp-changecheck@v0.3.0
+  with:
+    before: snapshots/baseline.json
+    after: snapshots/candidate.json
+```
+
+The snapshot paths are supplied by your project. See [the complete workflow, inputs and outputs](docs/github-action.md). No write permission or API key is required.
+
+You can also install and invoke the CLI directly:
+
 ```yaml
 name: MCP contract check
 on: [push, pull_request]
@@ -86,8 +102,8 @@ jobs:
   contract:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.12'
       - run: python -m pip install .

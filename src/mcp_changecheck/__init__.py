@@ -2,5 +2,5 @@
 
 from .core import SnapshotError, compare_snapshots, normalize_snapshot
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 __all__ = ["SnapshotError", "compare_snapshots", "normalize_snapshot", "__version__"]
