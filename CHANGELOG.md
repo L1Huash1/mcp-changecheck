@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 — 2026-10-25
+
+- Reject report outputs that alias either input snapshot through a hard link, as well as the same path or a symbolic link, preserving the input files and returning exit code 2.
+- Add regression coverage for linked outputs, new report directories, and invalid output paths.
+
 ## 0.2.0 — 2026-10-23
 
 - Add a self-contained HTML report with severity filters, search, expandable values, and print styling.

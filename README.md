@@ -45,6 +45,8 @@ mcp-changecheck examples/before.json examples/before.json
 
 `--fail-on never` still returns 2 for invalid input. Writing a report does not suppress the threshold exit code.
 
+`--output` rejects a path that refers to either input snapshot, including hard links and symbolic links, with exit code 2 to preserve the input files.
+
 ## What is checked?
 
 | Level | Examples | Default result |

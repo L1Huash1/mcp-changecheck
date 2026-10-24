@@ -113,8 +113,14 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
     try:
-        if args.output and args.output.resolve() in (args.before.resolve(), args.after.resolve()):
-            raise SnapshotError("Report output must not overwrite either input snapshot")
+        if args.output:
+            try:
+                args.output.stat()
+            except FileNotFoundError:
+                pass  # A new output file cannot alias an existing input.
+            else:
+                if any(args.output.samefile(path) for path in (args.before, args.after)):
+                    raise SnapshotError("Report output must not overwrite either input snapshot")
         report = compare_snapshots(load_snapshot(args.before), load_snapshot(args.after))
         rendered = render_report(report, args.format)
         if args.output:
