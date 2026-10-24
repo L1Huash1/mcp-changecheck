@@ -171,6 +171,46 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(self.before.read_bytes(), before_bytes)
                 self.assertEqual(self.after.read_bytes(), after_bytes)
 
+    def test_hardlinked_output_cannot_overwrite_either_input_snapshot(self):
+        before_bytes, after_bytes = self.before.read_bytes(), self.after.read_bytes()
+        for target in (self.before, self.after):
+            alias = self.directory / (target.stem + "-report.md")
+            try:
+                os.link(target, alias)
+            except OSError as error:
+                self.skipTest(f"Hard links are unavailable: {error}")
+            with self.subTest(target=target):
+                result = self.compare("--format", "markdown", "--output", alias)
+                self.assert_user_error(result)
+                self.assertIn("must not overwrite", result.stderr)
+                self.assertEqual(self.before.read_bytes(), before_bytes)
+                self.assertEqual(self.after.read_bytes(), after_bytes)
+
+    def test_symlinked_output_cannot_overwrite_either_input_snapshot(self):
+        before_bytes, after_bytes = self.before.read_bytes(), self.after.read_bytes()
+        for target in (self.before, self.after):
+            alias = self.directory / (target.stem + "-report-link.md")
+            try:
+                alias.symlink_to(target)
+            except OSError as error:
+                self.skipTest(f"Symbolic links are unavailable: {error}")
+            with self.subTest(target=target):
+                self.assert_user_error(self.compare("--format", "markdown", "--output", alias))
+                self.assertEqual(self.before.read_bytes(), before_bytes)
+                self.assertEqual(self.after.read_bytes(), after_bytes)
+
+    def test_missing_output_directory_is_created(self):
+        target = self.directory / "new" / "reports" / "report.json"
+        result = self.compare("--format", "json", "--output", target)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(target.read_text(encoding="utf-8"))["changes"], [])
+
+    def test_output_parent_that_is_a_file_has_diagnostic_without_traceback(self):
+        before_bytes, after_bytes = self.before.read_bytes(), self.after.read_bytes()
+        self.assert_user_error(self.compare("--output", self.before / "report.md"))
+        self.assertEqual(self.before.read_bytes(), before_bytes)
+        self.assertEqual(self.after.read_bytes(), after_bytes)
+
     def test_utf8_bom_snapshots_are_supported(self):
         self.before.write_text(json.dumps(snapshot("search")), encoding="utf-8-sig")
         self.after.write_text(json.dumps(snapshot("search")), encoding="utf-8-sig")

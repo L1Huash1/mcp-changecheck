@@ -51,6 +51,8 @@ mcp-changecheck examples/before.json examples/before.json
 
 `--fail-on breaking` 只因 breaking 失败；`review` 同时包括 breaking，且为默认值；`any` 包括所有变化；`never` 只报告。输入无效时始终返回 **2**。正常且未达到阈值返回 **0**。
 
+`--output` 不能指向任一输入快照，包括指向同一文件的硬链接或符号链接；遇到这种情况会返回 **2**，保留输入文件。
+
 ## 如何准备快照
 
 可以使用自己的 MCP 客户端或 [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) 保存 `tools/list` 结果。支持以下结构，也支持直接使用工具数组：
